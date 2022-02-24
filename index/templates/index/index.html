@@ -46,6 +46,7 @@
                 <table class="table">
                     <thead class="thead-dark">
                         <tr>
+                            <th scope="col" style="width: 50px"></th>
                             <th scope="col">Source</th>
                             <th scope="col">Download</th>
                             <th scope="col">Detail</th>
@@ -56,6 +57,7 @@
                         {% if source_data %}
                         {% for data in source_data %}
                         <tr data-linkPage="{{data.0}}">
+                            <td><b>{{ forloop.counter }}</b></td>
                             <td class="source-name">{{data.1}}</td>
                             <td class="option download-option" title="Tải dữ liệu" data-sourceName="{{data.1}}" data-linkPage="{{data.0}}">
                                 <button type="submit" class="btn btn-primary" data-sourceName="{{data.1}}" data-linkPage="{{data.0}}" style="display: flex; align-items: center;">

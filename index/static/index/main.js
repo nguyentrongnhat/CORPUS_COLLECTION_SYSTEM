@@ -265,6 +265,8 @@ $(document).ready(function(){
                 list_status_thread_download[id] = true
                 list_status_thread_save[id] = true
 
+                let progress_download_global = 0
+
                 $('#list-download-tasking').append(html)
                 let intervalId_download = setInterval(()=>{
                     if (id in list_terminate_interval_download == false) {
@@ -289,6 +291,7 @@ $(document).ready(function(){
                             $('#progress-download-' + id).css('width', progress+'%');
                             if(progress === 100) {
                                 console.log('done')
+                                progress_download_global = 100
                                 clearInterval(intervalId_download)
                                 $('#label-document-download-' + id).text('downloaded - ' + number_of_downloaded + ' - done')
                             }
@@ -317,8 +320,8 @@ $(document).ready(function(){
                             }
                             $('#progress-save-' + id).text(progress + '%')
                             $('#progress-save-' + id).css('width', progress+'%');
-                            if(progress === 100) {
-                                console.log('done')
+                            if(progress === 100 && progress_download_global == 100) {
+                                console.log('done save ' + progress_download_global)
                                 clearInterval(intervalId_save)
                                 clearInterval(intervalId_download)
                                 $('#label-document-save-' + id).text('saved - ' + number_of_saved + ' - done')
@@ -361,6 +364,8 @@ $(document).ready(function(){
                 list_status_thread_download[id] = true
                 list_status_thread_save[id] = true
 
+                let progress_download_global = 0
+
                 $('#list-download-tasking').append(html)
                 let intervalId_download = setInterval(()=>{
                     if (id in list_terminate_interval_download == false) {
@@ -385,6 +390,7 @@ $(document).ready(function(){
                             $('#progress-download-' + id).css('width', progress+'%');
                             if(progress === 100) {
                                 console.log('done')
+                                progress_download_global = 100
                                 clearInterval(intervalId_download)
                                 $('#label-document-download-' + id).text('downloaded - ' + number_of_downloaded + ' - done')
                             }
@@ -413,8 +419,8 @@ $(document).ready(function(){
                             }
                             $('#progress-save-' + id).text(progress + '%')
                             $('#progress-save-' + id).css('width', progress+'%');
-                            if(progress === 100) {
-                                console.log('done')
+                            if(progress === 100 && progress_download_global === 100) {
+                                console.log('done save ' + progress_download_global)
                                 clearInterval(intervalId_save)
                                 clearInterval(intervalId_download)
                                 $('#label-document-save-' + id).text('saved - ' + number_of_saved + ' - done')
@@ -455,6 +461,8 @@ $(document).ready(function(){
                 list_status_thread_download[id] = true
                 list_status_thread_save[id] = true
 
+                let progress_download_global = 0
+
                 $('#list-download-tasking').append(html)
                 let intervalId_download = setInterval(()=>{
                     if (id in list_terminate_interval_download == false) {
@@ -479,6 +487,7 @@ $(document).ready(function(){
                             $('#progress-download-' + id).css('width', progress+'%');
                             if(progress === 100) {
                                 console.log('done')
+                                progress_download_global = 100
                                 clearInterval(intervalId_download)
                                 $('#label-document-download-' + id).text('downloaded - ' + number_of_downloaded + ' - done')
                             }
@@ -507,7 +516,7 @@ $(document).ready(function(){
                             }
                             $('#progress-save-' + id).text(progress + '%')
                             $('#progress-save-' + id).css('width', progress+'%');
-                            if(progress === 100) {
+                            if(progress === 100 && progress_download_global === 100) {
                                 console.log('done')
                                 clearInterval(intervalId_save)
                                 clearInterval(intervalId_download)

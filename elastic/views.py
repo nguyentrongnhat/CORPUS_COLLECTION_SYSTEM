@@ -751,8 +751,12 @@ class Thread_insert_handle(threading.Thread):
                 if(not self.__running.is_set()): # condition stop thread
                     break
                 self.__flag.wait() # pause thread
+                if ('%' not in link_document):
+                    link_document_encoded = url_encode(link_document)
+                    doc = ParagraphsCorpus.objects.get(link_document = link_document_encoded)
                 # đoạn này kiểm tra trùng lặp bằng link document (lần 1)
-                doc = ParagraphsCorpus.objects.get(link_document = link_document)
+                else:
+                    doc = ParagraphsCorpus.objects.get(link_document = link_document)
                 title = doc.title
                 en = doc.get_en()
                 vi = doc.get_vi()
@@ -769,16 +773,21 @@ class Thread_insert_handle(threading.Thread):
                 try:
                     self.__flag.wait() # pause thread
                     title, vi, en = get_corpus(link_document,xpath_title,xpath_en,xpath_vi,break_word,continue_word)
+                    print('Da tai xong')
                     self.__flag.wait() # pause thread
                     progress_download[thread_name] = 100
                     number_document_downloaded[thread_name] = '1/1'
                 except:
                     pass
                     #return JsonResponse({'Thông báo': 'xpath đã nhập hoặc link document có thể chưa đúng'})
-                try:
+                '''try:
+                    print('kiem tra ton tai')
+                    print('test catche')
                     # đoạn này kiểm tra trùng lặp dữ liệu (lần 2) - bằng title của document
                     self.__flag.wait() # pause thread
-                    already = ParagraphsCorpus.objects.get(title = title)
+                    already = ParagraphsCorpus.objects.get(link_document = link_document)
+                    print('da lay already title:', already.title)
+                    
                     if(already.sourcescorpus.id == source.id):
                         print('DỮ LIỆU ĐÃ TỒN TẠI - KHÔNG LƯU')
                         data_documents_download[thread_name] = [already.id]
@@ -787,55 +796,55 @@ class Thread_insert_handle(threading.Thread):
                         progress_save[thread_name] = 100
 
                         number_document_downloaded[thread_name] = '1/1'
-                        number_document_saved[thread_name] = '1/1'
-                except:
+                        number_document_saved[thread_name] = '1/1'''
+                #except:
+                self.__flag.wait() # pause thread
+                already = False
+                print('DỮ LIỆU CHƯA TỒN TẠI')
+                try:
+                    if(not self.__running.is_set()): # condition stop thread
+                        break
                     self.__flag.wait() # pause thread
-                    already = False
-                    print('DỮ LIỆU CHƯA TỒN TẠI')
+                    doc = ParagraphsCorpus()
+                    doc.set_title(title)
+                    doc.set_en(en)
+                    doc.set_vi(vi)
+                    doc.set_link_document(link_document)
+                    doc.sourcescorpus = source
+                    doc.save()
+                    data_documents_download[thread_name] = [doc.id]
+                    print('LƯU THÀNH CÔNG PARAGRAPH DOCUMENT')
                     try:
-                        if(not self.__running.is_set()): # condition stop thread
-                            break
-                        self.__flag.wait() # pause thread
-                        doc = ParagraphsCorpus()
-                        doc.set_title(title)
-                        doc.set_en(en)
-                        doc.set_vi(vi)
-                        doc.set_link_document(link_document)
-                        doc.sourcescorpus = source
-                        doc.save()
-                        data_documents_download[thread_name] = [doc.id]
-                        print('LƯU THÀNH CÔNG PARAGRAPH DOCUMENT')
-                        try:
-                            num_sentence = len(vi)
-                            num_loop_out = 1
-                            
-                            for i in range(len(vi)):
-                                if(not self.__running.is_set()): # condition stop thread
-                                    break
-                                self.__flag.wait() # pause thread
-                                doc_st = SentencesCorpus(en_sentence = en[i], vi_sentence = vi[i], st_order = i)
-                                print ('TẠO THÀNH CÔNG SENTENCE: ', i)
-                                doc_st.paragraphscorpus = doc
-                                doc_st.save()
-                                self.__flag.wait() # pause thread
-                                print('LƯU THÀNH CÔNG SENTENCE: ', i)
-                                progress_save[thread_name] = int(round(num_loop_out/num_sentence,2)*100)
-                                number_document_downloaded[thread_name] = '1/1'
-                                number_document_saved[thread_name] = str(num_loop_out) + '/' + str(num_sentence) + ' (sentences)'
-                                num_loop_out+=1
-                            if(len(vi)==0 or len(en)==0):
-                                progress_save[thread_name] = 100
-                                number_document_downloaded[thread_name] = '1/1'
-                                number_document_saved[thread_name] = '0/0' + ' (sentences)'
-                            if(not self.__running.is_set()): # condition stop thread
-                                break   
-                        except:
+                        num_sentence = len(vi)
+                        num_loop_out = 1
+                        
+                        for i in range(len(vi)):
                             if(not self.__running.is_set()): # condition stop thread
                                 break
-                            print('KHÔNG LƯU ĐƯỢC SENTENCE')
-                        print('LƯU THÀNH CÔNG')
+                            self.__flag.wait() # pause thread
+                            doc_st = SentencesCorpus(en_sentence = en[i], vi_sentence = vi[i], st_order = i)
+                            print ('TẠO THÀNH CÔNG SENTENCE: ', i)
+                            doc_st.paragraphscorpus = doc
+                            doc_st.save()
+                            self.__flag.wait() # pause thread
+                            print('LƯU THÀNH CÔNG SENTENCE: ', i)
+                            progress_save[thread_name] = int(round(num_loop_out/num_sentence,2)*100)
+                            number_document_downloaded[thread_name] = '1/1'
+                            number_document_saved[thread_name] = str(num_loop_out) + '/' + str(num_sentence) + ' (sentences)'
+                            num_loop_out+=1
+                        if(len(vi)==0 or len(en)==0):
+                            progress_save[thread_name] = 100
+                            number_document_downloaded[thread_name] = '1/1'
+                            number_document_saved[thread_name] = '0/0' + ' (sentences)'
+                        if(not self.__running.is_set()): # condition stop thread
+                            break   
                     except:
-                        print('LƯU KHÔNG THÀNH CÔNG')
+                        if(not self.__running.is_set()): # condition stop thread
+                            break
+                        print('KHÔNG LƯU ĐƯỢC SENTENCE')
+                    print('LƯU THÀNH CÔNG')
+                except:
+                    print('LƯU KHÔNG THÀNH CÔNG')
             if(not self.__running.is_set()): # condition stop thread
                 break
             break
@@ -916,7 +925,7 @@ class Thread_insert_handle(threading.Thread):
                 
                 self.__flag.wait() # pause thread
                 
-                result = self.collect_corpus_by_list_pages(thread_name, list_pages, link_page, page_query, xpath_doc_links, xpath_title, xpath_en, xpath_vi, break_word, continue_word)
+                result = self.collect_corpus_by_list_pages(thread_name, source, list_pages, link_page, page_query, xpath_doc_links, xpath_title, xpath_en, xpath_vi, break_word, continue_word)
                 
                 self.__flag.wait() # pause thread
 
@@ -926,7 +935,7 @@ class Thread_insert_handle(threading.Thread):
             except:
                 return JsonResponse({'Thông báo': 'xpath đã nhập có thể chưa đúng'})
             
-            documents_count = len(result)
+            '''documents_count = len(result)
             num_loop_out=1
             self.__flag.wait() # pause thread
             for i in result:
@@ -940,7 +949,9 @@ class Thread_insert_handle(threading.Thread):
                     if(not self.__running.is_set()): # condition stop thread
                         data_documents_download[thread_name] = list_doc_id
                         break
-                    already = ParagraphsCorpus.objects.get(title = i)
+                    
+                    already = ParagraphsCorpus.objects.get(link_document = result[i]['link'])
+
                     if(already.sourcescorpus.id == source.id):
                         list_doc_id.append(already.id)
                         print('DỮ LIỆU ĐÃ TỒN TẠI - KHÔNG LƯU: ', already.title)
@@ -1012,7 +1023,7 @@ class Thread_insert_handle(threading.Thread):
                 break
             self.__flag.wait() # pause thread
             
-            data_documents_download[thread_name] = list_doc_id
+            data_documents_download[thread_name] = list_doc_id'''
             break
     
     def range_insert_handle (self):
@@ -1082,7 +1093,7 @@ class Thread_insert_handle(threading.Thread):
                     data_documents_download[thread_name] = list_doc_id
                     break
                 self.__flag.wait() # pause thread
-                result = self.collect_corpus_by_range_page(thread_name, start, end, link_page, page_query, xpath_doc_links, xpath_title, xpath_en, xpath_vi, break_word, continue_word)
+                self.collect_corpus_by_range_page(thread_name, source, start, end, link_page, page_query, xpath_doc_links, xpath_title, xpath_en, xpath_vi, break_word, continue_word)
                 print('GỌI HÀM THÀNH CÔNG')
                 self.__flag.wait() # pause thread
                 if(not self.__running.is_set()): # condition stop thread
@@ -1091,7 +1102,7 @@ class Thread_insert_handle(threading.Thread):
             except:
                 return JsonResponse({'Thông báo': 'xpath đã nhập có thể chưa đúng'})
             
-            documents_count = len(result)
+            '''documents_count = len(result)
             num_loop_out=1
             for i in result:
                 if(not self.__running.is_set()): # condition stop thread
@@ -1101,7 +1112,7 @@ class Thread_insert_handle(threading.Thread):
                     if(not self.__running.is_set()): # condition stop thread
                         data_documents_download[thread_name] = list_doc_id
                         break
-                    already = ParagraphsCorpus.objects.get(title = i)
+                    already = ParagraphsCorpus.objects.get(link_document = result[i]['link'])
                     if(already.sourcescorpus.id == source.id):
                         list_doc_id.append(already.id)
                         print('DỮ LIỆU ĐÃ TỒN TẠI - KHÔNG LƯU: ', already.title)
@@ -1113,12 +1124,18 @@ class Thread_insert_handle(threading.Thread):
                     print('DỮ LIỆU CHƯA TỒN TẠI')
                     try:
                         self.__flag.wait() # pause thread
-                        doc = ParagraphsCorpus()
-                        doc.set_title(i)
-                        doc.set_en(result[i]['en'])
-                        doc.set_vi(result[i]['vi'])
-                        doc.set_link_document(result[i]['link'])
-                        doc.sourcescorpus = source
+                        doc = ParagraphsCorpus(
+                            title = i,
+                            en_content = json.dumps(result[i]['en'], ensure_ascii=False),
+                            vi_content = json.dumps(result[i]['vi'], ensure_ascii=False),
+                            sourcescorpus = source,
+                            link_document = result[i]['link']
+                        )
+                        #doc.set_title(i)
+                        #doc.set_en(result[i]['en'])
+                        #doc.set_vi(result[i]['vi'])
+                        #doc.set_link_document(result[i]['link'])
+                        #doc.sourcescorpus = source
                         doc.save()
                         list_doc_id.append(doc.id)
                         self.__flag.wait() # pause thread
@@ -1128,9 +1145,14 @@ class Thread_insert_handle(threading.Thread):
                             for j in range(len(result[i]['vi'])):
                                 try:
                                     self.__flag.wait() # pause thread
-                                    doc_st = SentencesCorpus(en_sentence = result[i]['en'][j], vi_sentence = result[i]['vi'][j], st_order = j)
+                                    doc_st = SentencesCorpus(
+                                        paragraphscorpus = doc,
+                                        en_sentence = result[i]['en'][j],
+                                        vi_sentence = result[i]['vi'][j],
+                                        st_order = j
+                                    )
                                     print ('TẠO THÀNH CÔNG SENTENCE: ', i)
-                                    doc_st.paragraphscorpus = doc
+                                    #doc_st.paragraphscorpus = doc
                                     doc_st.save()
                                     print('LƯU THÀNH CÔNG SENTENCE: ', i)
                                 except:
@@ -1158,15 +1180,16 @@ class Thread_insert_handle(threading.Thread):
                 data_documents_download[thread_name] = list_doc_id
                 break
             
-            data_documents_download[thread_name] = list_doc_id 
+            data_documents_download[thread_name] = list_doc_id '''
             break
 
-    def collect_corpus_by_list_pages(self, thread_name, list_pages, link_page, page_query, document_links_xpath, title_xpath, en_xpath, vi_xpath, break_word, continue_word):
+    def collect_corpus_by_list_pages(self, thread_name, source, list_pages, link_page, page_query, document_links_xpath, title_xpath, en_xpath, vi_xpath, break_word, continue_word):
         while(True):
             if(not self.__running.is_set()): # condition stop thread
                 break
             links = []
-            result = {}
+            list_doc_id = []
+            
             self.__flag.wait() # pause thread
             for i in list_pages:
                 if(not self.__running.is_set()): # condition stop thread
@@ -1177,38 +1200,65 @@ class Thread_insert_handle(threading.Thread):
                 for j in self.collect_document_links(page_path, document_links_xpath):
                     self.__flag.wait() # pause thread
                     links.append(j)
-            '''for i in links:
-                print(i)'''
+            
             if(not self.__running.is_set()): # condition stop thread
                 break
             self.__flag.wait() # pause thread
 
             global progress_download
             global number_document_downloaded
+            global progress_save
+            global number_document_saved
+            global data_documents_download
 
             links_document_count = len(links)
             num_loop = 1
+            
             if(not self.__running.is_set()): # condition stop thread
                 break
             for path in links:
+
+                progress_save[thread_name] = 0
+                number_document_saved[thread_name] = ' 0/0 ' + '(sentences)'
+                
                 if(not self.__running.is_set()): # condition stop thread
                     break
                 
                 self.__flag.wait() # pause thread
 
-                progress_download[thread_name] = int(round(num_loop/links_document_count,2)*100)
+                '''progress_download[thread_name] = int(round(num_loop/links_document_count,2)*100)
                 number_document_downloaded[thread_name] = str(num_loop) + '/' + str(links_document_count)
-                num_loop+=1
+                num_loop+=1'''
                 if ('%' not in path):
                     path = url_encode(path)
+                    print('DA ENCODE URL')
                 try:
-                    self.__flag.wait() # pause thread
+                    # đoạn này kiểm tra trùng lặp bằng link document (lần 1)
+                    print('PATH:  ', path)
+                    doc = ParagraphsCorpus.objects.get(link_document = path.strip())
 
-                    doc = ParagraphsCorpus.objects.get(link_document = path)
-                    title = doc.title
+                    if ('%' not in path):
+                        link_document_encoded = url_encode(path)
+                        doc = ParagraphsCorpus.objects.get(link_document = link_document_encoded)
+                    # đoạn này kiểm tra trùng lặp bằng link document (lần 1)
+                    else:
+                        doc = ParagraphsCorpus.objects.get(link_document = path.strip())
+
+                    #doc = ParagraphsCorpus.objects.get(link_document = path)
+
+                    progress_download[thread_name] = int(round(num_loop/links_document_count,2)*100)
+                    number_document_downloaded[thread_name] = str(num_loop) + '/' + str(links_document_count)
+                    num_loop+=1
+
+                    '''title = doc.title
                     en = doc.get_en()
-                    vi = doc.get_vi()
-                    print('DỮ LIỆU ĐÃ TỒN TẠI - KHÔNG CẦN CÀO NỮA')
+                    vi = doc.get_vi()'''
+                    list_doc_id.append(doc.id)
+                    data_documents_download[thread_name] = list_doc_id
+
+                    progress_save[thread_name] = 100
+                    number_document_saved[thread_name] = 'all'
+                    print('DỮ LIỆU ĐÃ TỒN TẠI - KHÔNG CẦN CÀO NỮA: ', doc.title)
 
                 except:
                     try:
@@ -1216,43 +1266,101 @@ class Thread_insert_handle(threading.Thread):
                         if(not self.__running.is_set()): # condition stop thread
                             break
                         title, vi, en = get_corpus(path, title_xpath, en_xpath, vi_xpath, break_word, continue_word)
+
+
+                        progress_download[thread_name] = int(round(num_loop/links_document_count,2)*100)
+                        number_document_downloaded[thread_name] = str(num_loop) + '/' + str(links_document_count)
+                        num_loop+=1
+                        
+                        if(len(vi) != len(en)):
+                            continue
+                        
                         if(not self.__running.is_set()): # condition stop thread
                             break
+                        
                         self.__flag.wait() # pause thread
                         check_continue = False
                         for l in range(len(vi)):
                             len_vi = len(vi[l].split(' '))
                             len_en = len(en[l].split(' '))
-                            print('check_len_vi: ', len_vi)
-                            print('check_len_en: ', len_en)
+                            '''print('check_len_vi: ', len_vi)
+                            print('check_len_en: ', len_en)'''
                             if(len_vi < 0.15*len_en or len_en < 0.15*len_vi):
-                                print('KHÔNG CHÍNH XÁC - CONTINUE')
+                                print('GIÓNG CÂU KHÔNG CHÍNH XÁC - KHÔNG LƯU TÀI LIỆU NÀY')
+                                
                                 check_continue = True
                                 break
-                        if(check_continue == True):
-                            print('KHÔNG CHÍNH XÁC - CONTINUE')
+
+                        if(len(vi)== 0 or len(en)==0):
+                            progress_save[thread_name] = 100
+                            number_document_saved[thread_name] = 'all'
+                            print('TÀI LIỆU KHÔNG ĐÚNG CẤU TRÚC THU THẬP - KHÔNG LƯU TÀI LIỆU NÀY')
                             continue
+
+                        if(check_continue == True):
+                            progress_save[thread_name] = 100
+                            number_document_saved[thread_name] = 'all'
+                            print('GIÓNG CÂU KHÔNG CHÍNH XÁC - KHÔNG LƯU TÀI LIỆU NÀY')
+                            continue
+                        elif(check_continue == False and len(vi)!= 0 and len(en)!=0):
+                            print('GIÓNG CÂU CHÍNH XÁC - LƯU TÀI LIỆU')
+                            self.__flag.wait() # pause thread
+                            if(not self.__running.is_set()): # condition stop thread
+                                break
+                            doc = ParagraphsCorpus(
+                                title = title,
+                                en_content = json.dumps(en, ensure_ascii=False),
+                                vi_content = json.dumps(vi, ensure_ascii=False),
+                                sourcescorpus = source,
+                                link_document = path
+                            )
+                            doc.save()
+                            list_doc_id.append(doc.id)
+                            data_documents_download[thread_name] = list_doc_id
+                            self.__flag.wait() # pause thread
+                            if(not self.__running.is_set()): # condition stop thread
+                                data_documents_download[thread_name] = list_doc_id
+                                break
+                            print('LƯU THÀNH CÔNG PARAGRAPH DOCUMENT')
+                            self.__flag.wait() # pause thread
+
+                            num_loop_save = 1
+                            count_sentence = len(vi)
+                            for j in range(len(vi)):
+                                try:
+                                    if(not self.__running.is_set()): # condition stop thread
+                                        data_documents_download[thread_name] = list_doc_id
+                                        break
+                                    self.__flag.wait() # pause thread
+                                    doc_st = SentencesCorpus(
+                                        en_sentence = en[j],
+                                        vi_sentence = vi[j],
+                                        st_order = j,
+                                        paragraphscorpus = doc
+                                    )
+                                    print ('TẠO THÀNH CÔNG SENTENCE: ', j, ' - ', title)
+                                    doc_st.save()
+                                    print('LƯU THÀNH CÔNG SENTENCE: ', j, ' - ', title)
+                                    progress_save[thread_name] = round(float(round((j+1)/count_sentence,4)*100),2)
+                                    number_document_saved[thread_name] = str(j+1) + '/' + str(count_sentence) + ' (sentences)'
+                                    num_loop_save+=1
+                                except:
+                                    print('KHÔNG LƯU ĐƯỢC SENTENCE')
+                                    num_loop_save+=1
+                                    continue
                     except:
                         continue
-
-                if(len(vi) != len(en)):
-                    continue
-                #print(title)
-                #link = 'search?path=' + path
-                #print(link)
-                if(len(vi)!= 0 and len(en)!=0):
-                    result[title] = {'vi': vi, 'en': en, 'link': path}
             if(not self.__running.is_set()): # condition stop thread
                 break       
-            return result
             break
 
-    def collect_corpus_by_range_page(self, thread_name, start, end, link_page, page_query, document_links_xpath, title_xpath, en_xpath, vi_xpath, break_word, continue_word):
+    def collect_corpus_by_range_page(self, thread_name, source, start, end, link_page, page_query, document_links_xpath, title_xpath, en_xpath, vi_xpath, break_word, continue_word):
         while(True):
             if(not self.__running.is_set()): # condition stop thread
                 break
             links = []
             result = {}
+            list_doc_id = []
             end+=1
             '''print('ĐÃ VÀO HÀM')
             print('START: ', start)
@@ -1277,59 +1385,157 @@ class Thread_insert_handle(threading.Thread):
 
             global progress_download
             global number_document_downloaded
+            global progress_save
+            global number_document_saved
+            global data_documents_download
             
             links_document_count = len(links)
             num_loop = 1
             for path in links:
+
+                progress_save[thread_name] = 0
+                number_document_saved[thread_name] = ' 0/0 ' + '(sentences)'
+
                 if(not self.__running.is_set()): # condition stop thread
                     break
                 self.__flag.wait() # pause thread
-                progress_download[thread_name] = int(round(num_loop/links_document_count,2)*100)          
+                '''progress_download[thread_name] = int(round(num_loop/links_document_count,2)*100)   
+                print(progress_download[thread_name])       
                 number_document_downloaded[thread_name] = str(num_loop) + '/' + str(links_document_count)
-                num_loop+=1
+                print(number_document_downloaded[thread_name])
+                print('thread name param: ', thread_name)
+                print('thread name it self: ', threading.currentThread().getName().split(' ')[0])
+                num_loop+=1'''
                 if ('%' not in path):
                     path = url_encode(path)
+                    print('DA ENCODE URL')
                 try:
-                    doc = ParagraphsCorpus.objects.get(link_document = path)
-                    title = doc.title
+                    # đoạn này kiểm tra trùng lặp bằng link document (lần 1)
+                    print('PATH:  ', path)
+                    doc = ParagraphsCorpus.objects.get(link_document = path.strip())
+
+                    if ('%' not in path):
+                        link_document_encoded = url_encode(path)
+                        doc = ParagraphsCorpus.objects.get(link_document = link_document_encoded)
+                    # đoạn này kiểm tra trùng lặp bằng link document (lần 1)
+                    else:
+                        doc = ParagraphsCorpus.objects.get(link_document = path.strip())
+
+                    #doc = ParagraphsCorpus.objects.get(link_document = path)
+
+                    progress_download[thread_name] = int(round(num_loop/links_document_count,2)*100)
+                    number_document_downloaded[thread_name] = str(num_loop) + '/' + str(links_document_count)
+                    num_loop+=1
+
+                    '''title = doc.title
                     en = doc.get_en()
-                    vi = doc.get_vi()
-                    print('DỮ LIỆU ĐÃ TỒN TẠI - KHÔNG CẦN CÀO NỮA')
+                    vi = doc.get_vi()'''
+                    list_doc_id.append(doc.id)
+                    data_documents_download[thread_name] = list_doc_id
+
+                    progress_save[thread_name] = 100
+                    number_document_saved[thread_name] = 'all'
+                    print('DỮ LIỆU ĐÃ TỒN TẠI - KHÔNG CẦN CÀO NỮA: ', doc.title)
 
                 except:
                     try:
                         self.__flag.wait() # pause thread
+                        if(not self.__running.is_set()): # condition stop thread
+                            break
 
                         title, vi, en = get_corpus(path, title_xpath, en_xpath, vi_xpath, break_word, continue_word)
+
+                        self.__flag.wait() # pause thread
+                        if(not self.__running.is_set()): # condition stop thread
+                            break
+
+                        progress_download[thread_name] = int(round(num_loop/links_document_count,2)*100)
+                        number_document_downloaded[thread_name] = str(num_loop) + '/' + str(links_document_count)
+                        num_loop+=1
 
                         self.__flag.wait() # pause thread
 
                         check_continue = False
                         for l in range(len(vi)):
                             self.__flag.wait() # pause thread
+                            if(not self.__running.is_set()): # condition stop thread
+                                break
 
                             len_vi = len(vi[l].split(' '))
                             len_en = len(en[l].split(' '))
-                            print('check_len_vi: ', len_vi)
-                            print('check_len_en: ', len_en)
+                            #print('check_len_vi: ', len_vi)
+                            #print('check_len_en: ', len_en)
                             if(len_vi < 0.15*len_en or len_en < 0.15*len_vi):
-                                print('KHÔNG CHÍNH XÁC - CONTINUE')
+                                print('GIÓNG CÂU KHÔNG CHÍNH XÁC - KHÔNG LƯU TÀI LIỆU NÀY')
                                 check_continue = True
                                 break
                         if(not self.__running.is_set()): # condition stop thread
                             break
-                        if(check_continue == True):
-                            print('KHÔNG CHÍNH XÁC - CONTINUE')
+
+                        if(len(vi)== 0 or len(en)==0):
+                            progress_save[thread_name] = 100
+                            number_document_saved[thread_name] = 'all'
+                            print('TÀI LIỆU KHÔNG ĐÚNG CẤU TRÚC THU THẬP - KHÔNG LƯU TÀI LIỆU NÀY')
                             continue
+
+                        if(check_continue == True):
+                            progress_save[thread_name] = 100
+                            number_document_saved[thread_name] = 'all'
+                            print('GIÓNG CÂU KHÔNG CHÍNH XÁC - KHÔNG LƯU TÀI LIỆU NÀY')
+                            continue
+                        elif(check_continue == False and len(vi)!= 0 and len(en)!=0):
+                            print('GIÓNG CÂU CHÍNH XÁC - LƯU TÀI LIỆU')
+                            
+                            doc = ParagraphsCorpus(
+                                title = title,
+                                en_content = json.dumps(en, ensure_ascii=False),
+                                vi_content = json.dumps(vi, ensure_ascii=False),
+                                sourcescorpus = source,
+                                link_document = path
+                            )
+                            doc.save()
+                            
+                            list_doc_id.append(doc.id)
+                            data_documents_download[thread_name] = list_doc_id
+                            print('LƯU THÀNH CÔNG PARAGRAPH DOCUMENT')
+                            print('PATH DA LUU: ', doc.link_document)
+                            print('PATH: ', path)
+                            print(' so sanh: ', doc.link_document == path)
+                            self.__flag.wait() # pause thread
+
+                            num_loop_save = 1
+                            count_sentence = len(vi)
+                            print('LEN VI: ', len(vi))
+                            for j in range(len(vi)):
+                                
+                                try:
+                                    self.__flag.wait() # pause thread
+                                    if(not self.__running.is_set()): # condition stop thread
+                                        data_documents_download[thread_name] = list_doc_id
+                                        break
+                                    self.__flag.wait() # pause thread
+                                    doc_st = SentencesCorpus(
+                                        en_sentence = en[j],
+                                        vi_sentence = vi[j],
+                                        st_order = j,
+                                        paragraphscorpus = doc
+                                    )
+                                    print ('TẠO THÀNH CÔNG SENTENCE: ', j, ' - ', title)
+                                    doc_st.save()
+                                    
+                                    progress_save[thread_name] = round(float(round((j+1)/count_sentence,4)*100),2)
+                                    
+                                    number_document_saved[thread_name] = str(j+1) + '/' + str(count_sentence) + ' (sentences)'
+                                    num_loop_save+=1
+                                    print('LƯU THÀNH CÔNG SENTENCE: ', j, ' - ', title)
+                                except:
+                                    print('KHÔNG LƯU ĐƯỢC SENTENCE')
+                                    num_loop_save+=1
+                                    continue
                     except:
                         continue
-                if(len(vi)!= 0 and len(en)!=0):
-                    result[title] = {'vi': vi, 'en': en, 'link': path}
-            
             if(not self.__running.is_set()): # condition stop thread
                 break
-            
-            return result
             break
 
     def collect_document_links(self, url, document_links_xpath):
@@ -1422,8 +1628,8 @@ def collect_corpus_by_range_page(thread_name, start, end, link_page, page_query,
                 for l in range(len(vi)):
                     len_vi = len(vi[l].split(' '))
                     len_en = len(en[l].split(' '))
-                    print('check_len_vi: ', len_vi)
-                    print('check_len_en: ', len_en)
+                    '''print('check_len_vi: ', len_vi)
+                    print('check_len_en: ', len_en)'''
                     if(len_vi < 0.35*len_en or len_en < 0.35*len_vi):
                         print('KHÔNG CHÍNH XÁC - CONTINUE')
                         check_continue = True

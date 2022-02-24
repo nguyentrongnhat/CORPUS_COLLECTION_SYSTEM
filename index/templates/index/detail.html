@@ -41,6 +41,7 @@
         <table class="table">
             <thead>
                 <tr>
+                    <th scope="col" style="width: 50px;">STT</th>
                     <th scope="col">Tiếng Anh</th>
                     <th scope="col">Tiếng Việt</th>
                 </tr>
@@ -48,6 +49,7 @@
             <tbody>
                 {% for lang in copus %}
                 <tr>
+                    <td><b>{{ forloop.counter }}</b></td>
                     <td style="width: 50%;">{{ lang.0 }}</td>
                     <td style="width: 50%;">{{ lang.1 }}</td>
                 </tr>

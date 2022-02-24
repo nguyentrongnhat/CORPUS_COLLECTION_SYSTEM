@@ -15,7 +15,7 @@ import nltk.data
 def url_encode(url):
     com = urllib.parse.urlparse(url)
     encoded = com.scheme + '://' + com.netloc + urllib.parse.quote(com.path)
-    return encoded
+    return encoded.strip()
 
 def get_corpus(url, title_xpath, en_xpath, vi_xpath, break_word, continue_word):
     if ('%' not in url):
@@ -46,7 +46,7 @@ def get_corpus(url, title_xpath, en_xpath, vi_xpath, break_word, continue_word):
     check_remove_duplicate_content = False
     for i in range(len(list_vi_xpath)-1):
         for j in range(i+1, len(list_vi_xpath)):
-            if(list_vi_xpath[i].strip() in list_vi_xpath[j].strip() or list_vi_xpath[j].strip() in list_vi_xpath[i].strip()):
+            if(list_vi_xpath[i].strip().replace(' ', '').lower() in list_vi_xpath[j].strip().replace(' ', '').lower() or list_vi_xpath[j].strip().replace(' ', '').lower() in list_vi_xpath[i].strip().replace(' ', '').lower()):
                 check_remove_duplicate_content = True
                 break
         if(check_remove_duplicate_content == True):
@@ -54,20 +54,23 @@ def get_corpus(url, title_xpath, en_xpath, vi_xpath, break_word, continue_word):
     if(check_remove_duplicate_content == False):
         for i in range(len(list_en_xpath)-1):
             for j in range(i+1, len(list_en_xpath)):
-                if(list_en_xpath[i].strip() in list_en_xpath[j].strip() or list_en_xpath[j].strip() in list_en_xpath[i].strip()):
+                if(list_en_xpath[i].strip().replace(' ', '').lower() in list_en_xpath[j].strip().replace(' ', '').lower() or list_en_xpath[j].strip().replace(' ', '').lower() in list_en_xpath[i].strip().replace(' ', '').lower()):
                     check_remove_duplicate_content = True
                     break
             if(check_remove_duplicate_content == True):
                 break
     
     check_classify_language = False
-    for i in range(len(list_vi_xpath)):
-        for j in range(len(list_en_xpath)):
-            if(list_vi_xpath[i].strip() in list_en_xpath[j].strip() or list_en_xpath[j].strip() in list_vi_xpath[i].strip()):
-                check_classify_language = True
+    if('text()' in vi_xpath or 'text()' in en_xpath):
+        check_classify_language = True
+    if(check_classify_language == False):
+        for i in range(len(list_vi_xpath)):
+            for j in range(len(list_en_xpath)):
+                if(list_vi_xpath[i].strip().replace(' ', '').lower() in list_en_xpath[j].strip().replace(' ', '').lower() or list_en_xpath[j].strip().replace(' ', '').lower() in list_vi_xpath[i].strip().replace(' ', '').lower()):
+                    check_classify_language = True
+                    break
+            if(check_classify_language == True):
                 break
-        if(check_classify_language == True):
-            break
     
     for i in range(len(break_word)):
         break_word[i] = break_word[i].upper().strip()
@@ -111,6 +114,8 @@ def get_corpus(url, title_xpath, en_xpath, vi_xpath, break_word, continue_word):
 
         ####################################
         if(check_classify_language == False):
+            print('KHÔNG XỬ LÝ PHÂN LOẠI NGÔN NGỮ - EN')
+            
             tmp_split = split_sentence(tmp.replace('\n',''))
             for sen in tmp_split:
                 en_nltk.append(sen)
@@ -171,6 +176,7 @@ def get_corpus(url, title_xpath, en_xpath, vi_xpath, break_word, continue_word):
             except:
                 print('EN:', len(en))
                 print('Dính lỗi định danh')
+        print('EN: ', len(en))
 
     print('============== XỬ LÝ TIẾNG VIỆT ================')
     print(len(vi_content_tags))
@@ -207,6 +213,8 @@ def get_corpus(url, title_xpath, en_xpath, vi_xpath, break_word, continue_word):
 
         ####################################
         if(check_classify_language == False):
+            print('KHÔNG XỬ LÝ PHÂN LOẠI NGÔN NGỮ - VI')
+    
             tmp_split = split_sentence(tmp.replace('\n',''))
             for sen in tmp_split:
                 vi_nltk.append(sen)
@@ -262,36 +270,44 @@ def get_corpus(url, title_xpath, en_xpath, vi_xpath, break_word, continue_word):
             except:
                 print('VI:', len(vi))
                 print('Dính lỗi định danh')
+        print('VI: ', len(vi))
 
-    if(len(en_nltk) == len(vi_nltk)):
+    '''if(len(en_nltk) == len(vi_nltk)):
         vi_nltk = list(dict.fromkeys(vi_nltk))
-        en_nltk = list(dict.fromkeys(en_nltk))
-        ######################
-        # XỬ LÝ CẮT CÂU
-        if(len(vi_nltk) == 1 and len(en_nltk) == 1):
-            print('XỬ LÝ CẮT CÂU')
-            vi_nltk = split_sentence(vi_nltk[0])
-            en_nltk = split_sentence(en_nltk[0])
-            if(len(vi) != len(en)):
-                nl_vi, nl_en = normalize_sentence(vi, en)
-                if(len(nl_vi) == len(nl_en)):
-                    vi_nltk = nl_vi
-                    en_nltk = nl_en
-        ######################
-        check_valid = False
-        print('Đang trong hàm collect')
-        for l in range(len(vi_nltk)):
-            len_vi = len(vi_nltk[l].split(' '))
-            len_en = len(en_nltk[l].split(' '))
-            print('check_len_vi: ', len_vi)
-            print('check_len_en: ', len_en)
-            if(len_vi < 0.15*len_en or len_en < 0.15*len_vi):
-                #print('KHÔNG CHÍNH XÁC - CONTINUE')
-                check_valid = True
-                break
-        if(check_valid == False):
+        en_nltk = list(dict.fromkeys(en_nltk))'''
+        
+    min_nltk = len(vi_nltk)
+    if(min_nltk > len(en_nltk)):
+        min_nltk = len(en_nltk)
+        vi_nltk = vi_nltk[:min_nltk]
+    else:
+        en_nltk = en_nltk[:min_nltk]
+    ######################
+    # XỬ LÝ CẮT CÂU
+    if(len(vi_nltk) == 1 and len(en_nltk) == 1):
+        print('XỬ LÝ CẮT CÂU')
+        vi_nltk = split_sentence(vi_nltk[0])
+        en_nltk = split_sentence(en_nltk[0])
+        if(len(vi) != len(en)):
+            nl_vi, nl_en = normalize_sentence(vi, en)
+            if(len(nl_vi) == len(nl_en)):
+                vi_nltk = nl_vi
+                en_nltk = nl_en
+    ######################
+    check_valid = False
+    print('Đang trong hàm collect')
+    for l in range(len(vi_nltk)):
+        len_vi = len(vi_nltk[l].split(' '))
+        len_en = len(en_nltk[l].split(' '))
+        '''print('check_len_vi: ', len_vi)
+        print('check_len_en: ', len_en)'''
+        if(len_vi < 0.35*len_en or len_en < 0.35*len_vi):
             #print('KHÔNG CHÍNH XÁC - CONTINUE')
-            return title, vi_nltk, en_nltk
+            check_valid = True
+            break
+    if(check_valid == False):
+        #print('KHÔNG CHÍNH XÁC - CONTINUE')
+        return title, vi_nltk, en_nltk
     #else:
     if (check_remove_duplicate_content == True):
         vi = list(dict.fromkeys(vi))
@@ -319,14 +335,13 @@ def get_corpus(url, title_xpath, en_xpath, vi_xpath, break_word, continue_word):
     else:
         en = en[:min]
 
-    print('TITLE: ', title)
+    '''print('TITLE: ', title)
     print('EN: ', en)
-    print('VI: ', vi)
+    print('VI: ', vi)'''
     return title, vi, en
 
 # Hạm này dùng để phân câu cho một đoạn
 def split_sentence(text):
-    nltk.download('punkt')
     sent_text = nltk.sent_tokenize(text)
     return sent_text
 
@@ -397,7 +412,7 @@ def lang_classify(text, lang):
             continue
     count_word  = len(text.split(' '))
 
-    if(count_other_lang < count_lang):
+    if(count_other_lang <= count_lang):
         print('Duyệt xử lý thứ cấp: ', text.replace('\n',''))
         return lang
     else:
